@@ -13,7 +13,6 @@ import { verifyMediaMessage, verifyMessage } from "./wbotMessageListener";
 import CheckSettings from "../../helpers/CheckSettings";
 import saveMediaToFile from "../../helpers/saveMediaFile";
 import { getJidOf } from "./getJidOf";
-import { getPublicPath } from "../../helpers/GetPublicPath";
 import { logger } from "../../utils/logger";
 import { URLCharEncoder } from "../../helpers/URLCharEncoder";
 
@@ -57,18 +56,22 @@ export const getMessageFileOptions = async (
 ): Promise<AnyMediaMessageContent> => {
   mimetype = mimetype || mime.lookup(pathMedia) || "application/octet-stream";
 
+  const url = pathMedia.match(/^https?:\/\//) && {
+    url: pathMedia
+  };
+
   try {
     let options: AnyMediaMessageContent;
 
     if (mimetype.startsWith("video/")) {
       options = {
         fileName,
-        video: { stream: fs.createReadStream(pathMedia) }
+        video: url || { stream: fs.createReadStream(pathMedia) }
       };
     } else if (mimetype === "audio/ogg") {
       options = {
         fileName,
-        audio: { stream: fs.createReadStream(pathMedia) },
+        audio: url || { stream: fs.createReadStream(pathMedia) },
         mimetype: "audio/ogg; codecs=opus",
         ptt: true
       };
@@ -76,23 +79,23 @@ export const getMessageFileOptions = async (
       const needConvert = fileName.includes("audio-record-site");
       options = {
         fileName,
-        audio: {
+        audio: url || {
           stream: needConvert
             ? await processRecordedAudio(pathMedia)
             : fs.createReadStream(pathMedia)
         },
-        mimetype: needConvert ? "audio/ogg; codecs=opus" : mimetype,
-        ptt: needConvert || !!ptt
+        mimetype: !url && needConvert ? "audio/ogg; codecs=opus" : mimetype,
+        ptt: (!url && needConvert) || !!ptt
       };
     } else if (supportedImages.includes(mimetype)) {
       options = {
         fileName,
-        image: { stream: fs.createReadStream(pathMedia) }
+        image: url || { stream: fs.createReadStream(pathMedia) }
       };
     } else {
       options = {
         fileName,
-        document: { stream: fs.createReadStream(pathMedia) },
+        document: url || { stream: fs.createReadStream(pathMedia) },
         mimetype
       };
     }
@@ -186,8 +189,7 @@ export const SendWhatsAppMedia = async ({
         mimetype: media.mimetype,
         filename: fileName || media.originalname
       },
-      ticket.companyId,
-      ticket.id
+      ticket
     );
     readableFile.destroy();
 
