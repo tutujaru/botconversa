@@ -469,7 +469,7 @@ const MainListItems = (props) => {
         textAlign: "right", 
         fontWeight: "bold" 
       }}>
-        Versão:6.2.0 - CRM - RO © 2025
+        Versão:6.2.1 - CRM - RO © 2025
       </Typography>
     </>
   )}
